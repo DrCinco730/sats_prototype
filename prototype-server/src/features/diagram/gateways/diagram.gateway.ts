@@ -179,15 +179,43 @@ export class DiagramGateway implements OnGatewayDisconnect {
     });
   }
 
+// prototype-server/src/features/diagram/gateways/diagram.gateway.ts
+// Only showing the send_reaction handler which needs to be fixed
+
   @SubscribeMessage('send_reaction')
   handleReaction(
       @MessageBody() payload: { diagramId: string; userId: string; reaction: any },
       @ConnectedSocket() client: Socket,
   ) {
-    const { diagramId, reaction } = payload;
+    const { diagramId, userId, reaction } = payload;
 
-    // إرسال التفاعل إلى جميع المستخدمين في المخطط
-    this.server.to(diagramId).emit('reaction_received', reaction);
+    // Validate the reaction data
+    if (!reaction || !reaction.point || !reaction.value) {
+      console.warn('Received invalid reaction data:', reaction);
+      return;
+    }
+
+    // Add user information to the reaction
+    const diagramUsers = this.activeUsers.get(diagramId);
+    const userInfo = diagramUsers?.get(userId);
+
+    // Enhance the reaction with user information
+    const enhancedReaction = {
+      ...reaction,
+      userId,
+      username: userInfo?.name || 'Unknown User',
+      color: userInfo?.color || '#3B82F6'
+    };
+
+    // Broadcast the reaction to all clients including the sender
+    // (sender already has local reaction, but this confirms server received it)
+    this.server.to(diagramId).emit('reaction_received', {
+      userId,
+      reaction: enhancedReaction
+    });
+
+    // Log for debugging
+    console.log(`User ${userId} sent reaction ${reaction.value} in diagram ${diagramId}`);
   }
 
   @SubscribeMessage('get_active_users')

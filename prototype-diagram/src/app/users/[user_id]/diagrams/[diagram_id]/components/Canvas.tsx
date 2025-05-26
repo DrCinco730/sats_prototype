@@ -24,7 +24,7 @@ import { useDnD } from "../hooks/useDnD";
 import { useDiagramSocket } from "../hooks/useDiagramSocket";
 import CustomNode from "./CustomNode";
 import LiveCursors from "./LiveCursors";
-import { CursorMode, ReactionProvider, useReaction } from "../hooks/useReaction";
+import { CursorMode, ReactionProvider, useReaction, Point, Reaction } from "../hooks/useReaction";
 import useInterval from "../hooks/useInterval";
 import FlyingReaction from "./FlyingReaction";
 import ReactionSelector from "./ReactionSelector";
@@ -253,15 +253,25 @@ function CanvasContent({
   useEffect(() => {
     if (!socket) return;
 
-    const handleReactionReceived = (reaction: any) => {
-      setReactions((prevReactions) => [
-        ...prevReactions,
-        {
+    const handleReactionReceived = (payload: any) => {
+      const { reaction } = payload;
+
+      // التحقق من صحة بيانات التفاعل قبل إضافته
+      if (reaction && reaction.point && reaction.value && reaction.timestamp) {
+        // إضافة قيمة عشوائية صغيرة للطابع الزمني لضمان تفرد المفاتيح
+        const uniqueTimestamp = reaction.timestamp + (Math.random() * 0.001);
+
+        // إنشاء كائن تفاعل جديد
+        const newReaction: Reaction = {
           point: reaction.point,
           value: reaction.value,
-          timestamp: reaction.timestamp,
-        },
-      ]);
+          timestamp: uniqueTimestamp, // استخدام الطابع الزمني الفريد
+          userId: payload.userId
+        };
+
+        // إضافة إلى الحالة المحلية
+        setReactions((prevReactions) => [...prevReactions, newReaction]);
+      }
     };
 
     socket.on("reaction_received", handleReactionReceived);
@@ -274,7 +284,7 @@ function CanvasContent({
   // معالجة أحداث لوحة المفاتيح
   useEffect(() => {
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "e") {
+      if (e.key === "e" || e.key === "E") {
         setCursorState({
           mode: CursorMode.ReactionSelector,
         });
@@ -294,38 +304,50 @@ function CanvasContent({
 
   // حذف التفاعلات القديمة
   useInterval(() => {
+    const now = Date.now();
     setReactions((prevReactions) =>
-        prevReactions.filter((r) => r.timestamp > Date.now() - 4000)
+        // الاحتفاظ بالتفاعلات التي عمرها أقل من 4 ثوانٍ
+        prevReactions.filter((r) => now - r.timestamp < 4000)
     );
   }, 1000);
 
-  // إرسال التفاعلات بشكل دوري
   useInterval(() => {
     if (
         cursorState.mode === CursorMode.Reaction &&
         cursorState.isPressed &&
         cursor
     ) {
-      // إنشاء نقطة تفاعل
-      const reaction = {
-        point: {
-          screen: cursor
-        },
-        value: cursorState.reaction,
-        timestamp: Date.now(),
+      // إنشاء نقطة تفاعل مع إحداثيات الشاشة والتدفق
+      const point: Point = {
+        screen: cursor,
+        flow: screenToFlowPosition(cursor)
       };
 
+      // إضافة قيمة عشوائية صغيرة للطابع الزمني لضمان التفرد
+      const uniqueTimestamp = Date.now() + Math.random();
+
+      // إنشاء بيانات التفاعل
+      const reaction: Reaction = {
+        point,
+        value: cursorState.reaction,
+        timestamp: uniqueTimestamp,
+        userId
+      };
+
+      // إضافة إلى الحالة المحلية
       setReactions((prevReactions) => [...prevReactions, reaction]);
 
+      // إرسال إلى الخادم إذا كان Socket متاحًا
       if (socket) {
         socket.emit("send_reaction", {
           diagramId,
           userId,
-          reaction,
+          reaction
         });
       }
     }
   }, 100);
+
 
   const emitUpdate = useCallback(
       debounce((diagramId: string, updatedDiagram: any) => {
@@ -436,6 +458,7 @@ function CanvasContent({
     }
   }, [socket, diagramId, userId]);
 
+  // تعيين رمز تفاعل محدد
   const setReaction = useCallback((reaction: string) => {
     setCursorState({
       mode: CursorMode.Reaction,
@@ -444,21 +467,33 @@ function CanvasContent({
     });
   }, [setCursorState]);
 
-  const handlePointerDown = useCallback(() => {
+  // معالجة ضغط المؤشر لإرسال التفاعلات
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (cursorState.mode === CursorMode.Reaction) {
       setCursorState({
         ...cursorState,
         isPressed: true,
       });
+
+      // منع السلوك الافتراضي لتجنب التداخل مع تفاعلات المخطط
+      if (cursorState.mode === CursorMode.Reaction) {
+        e.stopPropagation();
+      }
     }
   }, [cursorState, setCursorState]);
 
-  const handlePointerUp = useCallback(() => {
+  // معالجة رفع المؤشر لإيقاف إرسال التفاعلات
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (cursorState.mode === CursorMode.Reaction) {
       setCursorState({
         ...cursorState,
         isPressed: false,
       });
+
+      // منع السلوك الافتراضي
+      if (cursorState.mode === CursorMode.Reaction) {
+        e.stopPropagation();
+      }
     }
   }, [cursorState, setCursorState]);
 
@@ -489,9 +524,9 @@ function CanvasContent({
             <Background />
             <LiveCursors />
 
-            {reactions.map((reaction) => (
+            {reactions.map((reaction, index) => (
                 <FlyingReaction
-                    key={reaction.timestamp.toString()}
+                    key={`reaction-${reaction.timestamp}-${reaction.userId || 'local'}-${index}`}
                     point={reaction.point}
                     timestamp={reaction.timestamp}
                     value={reaction.value}

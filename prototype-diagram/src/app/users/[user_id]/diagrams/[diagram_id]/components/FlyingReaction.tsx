@@ -2,12 +2,7 @@
 
 import React from "react";
 import "../styles/reactions.css";
-
-type Point = {
-    screen?: { x: number; y: number };
-    flow?: { x: number; y: number };
-    viewport?: { zoom: number; x: number; y: number };
-};
+import { Point } from "../hooks/useReaction";
 
 type Props = {
     point: Point;
@@ -16,33 +11,40 @@ type Props = {
 };
 
 export default function FlyingReaction({ point, timestamp, value }: Props) {
-    // تحديد الموقع على الشاشة
+    // استخراج إحداثيات الشاشة مع القيم الافتراضية
     let x = 0, y = 0;
 
-    // استخدام إحداثيات الشاشة مباشرة إذا كانت متوفرة
     if (point.screen) {
         x = point.screen.x;
         y = point.screen.y;
+    } else if (point.flow) {
+        // استخدام إحداثيات التدفق كحل بديل إذا كانت متوفرة
+        x = point.flow.x;
+        y = point.flow.y;
     }
+
+    // إنشاء متغير التحريك بناءً على الطابع الزمني
+    const animationVariant = Math.floor(timestamp % 3);
 
     return (
         <div
-            className="pointer-events-none absolute select-none z-[9000]"
+            className="flying-reaction pointer-events-none absolute select-none"
             style={{
                 left: x,
                 top: y,
-                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+                zIndex: 9000,
+                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))",
             }}
         >
             <div
                 className="disappear text-2xl"
                 style={{
-                    animation: `goUp${timestamp % 3} 2s, fadeOut 2s`,
+                    animation: `goUp${animationVariant} 2s, fadeOut 2s`,
                 }}
             >
                 <div
                     style={{
-                        animation: `leftRight${timestamp % 3} 0.3s alternate infinite ease-in-out`,
+                        animation: `leftRight${animationVariant} 0.5s alternate infinite ease-in-out`,
                         transform: "translate(-50%, -50%)",
                     }}
                 >

@@ -1,3 +1,6 @@
+// 1. First, let's fix the useReaction.tsx hook for proper type definitions and state management
+
+// src/app/users/[user_id]/diagrams/[diagram_id]/hooks/useReaction.tsx
 "use client";
 
 import {
@@ -28,10 +31,19 @@ export type CursorState =
     isPressed: boolean;
 };
 
+// Fix: Improved Point type with proper structure
+export type Point = {
+    screen?: { x: number; y: number };
+    flow?: { x: number; y: number };
+    viewport?: { zoom: number; x: number; y: number };
+};
+
+// Fix: Added type safety to Reaction object
 export type Reaction = {
     value: string;
     timestamp: number;
-    point: { x: number; y: number };
+    point: Point;
+    userId?: string; // Track who sent the reaction
 };
 
 type ReactionContextType = {
