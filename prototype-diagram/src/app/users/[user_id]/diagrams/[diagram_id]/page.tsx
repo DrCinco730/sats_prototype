@@ -1,12 +1,14 @@
 // src/app/users/[user_id]/diagrams/[diagram_id]/page.tsx
 
 import { ReactFlowProvider } from "@xyflow/react";
-import { DnDProvider } from "./hooks/useDnD";
-import Canvas from "./components/Canvas";
 import { getDiagramDetails } from "@/server/diagrams";
-import { SocketProvider } from "./hooks/useDiagramSocket";
-import { ReactionProvider } from "./hooks/useReaction";
-import { UserColorsProvider } from "./hooks/useUserColors";
+
+
+import {SocketProvider} from "@/app/users/[user_id]/diagrams/[diagram_id]/hooks/useDiagramSocket";
+import {UserColorsProvider} from "@/app/users/[user_id]/diagrams/[diagram_id]/hooks/useUserColors";
+import {DnDProvider} from "@/app/users/[user_id]/diagrams/[diagram_id]/hooks/useDnD";
+import {ReactionProvider} from "@/app/users/[user_id]/diagrams/[diagram_id]/hooks/useReaction";
+import Canvas from "@/app/users/[user_id]/diagrams/[diagram_id]/components/Canvas";
 
 export default async function Page({
                                        params,
