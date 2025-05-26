@@ -1,27 +1,26 @@
 // src/app/users/[user_id]/diagrams/[diagram_id]/components/ReactionSelector.tsx
-
 import React from "react";
+import { useAwareness } from "../hooks/useAwareness";
 
-type Props = {
-    setReaction: (reaction: string) => void;
-};
+export default function ReactionSelector({ onClose }: { onClose: () => void }) {
+    const { sendReaction } = useAwareness();
 
-export default function ReactionSelector({ setReaction }: Props) {
-    // Fix: Added additional reactions and improved styling
+    const handleSelect = (reaction: string) => {
+        sendReaction(reaction);
+        onClose();
+    };
+
     return (
         <div
-            className="reaction-selector absolute bottom-20 left-0 right-0 mx-auto w-fit transform rounded-full bg-white/95 px-3 py-2 backdrop-blur-sm shadow-lg"
+            className="reaction-selector absolute bottom-20 left-0 right-0 mx-auto w-fit transform rounded-full bg-white px-2"
             onPointerMove={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
         >
-            <ReactionButton reaction="👍" onSelect={setReaction} />
-            <ReactionButton reaction="❤️" onSelect={setReaction} />
-            <ReactionButton reaction="🔥" onSelect={setReaction} />
-            <ReactionButton reaction="😍" onSelect={setReaction} />
-            <ReactionButton reaction="👀" onSelect={setReaction} />
-            <ReactionButton reaction="😱" onSelect={setReaction} />
-            <ReactionButton reaction="🙁" onSelect={setReaction} />
-            <ReactionButton reaction="👏" onSelect={setReaction} />
+            <ReactionButton reaction="👍" onSelect={handleSelect} />
+            <ReactionButton reaction="🔥" onSelect={handleSelect} />
+            <ReactionButton reaction="😍" onSelect={handleSelect} />
+            <ReactionButton reaction="👀" onSelect={handleSelect} />
+            <ReactionButton reaction="😱" onSelect={handleSelect} />
+            <ReactionButton reaction="🙁" onSelect={handleSelect} />
         </div>
     );
 }
@@ -36,10 +35,7 @@ function ReactionButton({
     return (
         <button
             className="reaction-button transform select-none p-2 text-xl transition-transform hover:scale-150 focus:scale-150 focus:outline-none"
-            onPointerDown={(e) => {
-                e.stopPropagation(); // Fix: Prevent event propagation
-                onSelect(reaction);
-            }}
+            onPointerDown={() => onSelect(reaction)}
         >
             {reaction}
         </button>

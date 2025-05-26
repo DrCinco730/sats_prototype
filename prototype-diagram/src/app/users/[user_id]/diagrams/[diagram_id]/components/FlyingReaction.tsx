@@ -1,50 +1,107 @@
 // src/app/users/[user_id]/diagrams/[diagram_id]/components/FlyingReaction.tsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/reactions.css";
-import { Point } from "../hooks/useReaction";
+import { useAwareness } from "../hooks/useAwareness";
+import { useYjsProvider } from "../hooks/useYjsProvider";
 
-type Props = {
+type Point = {
+    x: number;
+    y: number;
+};
+
+type ReactionData = {
+    emoji: string;
+    point: Point;
+    timestamp: number;
+    userId: string;
+};
+
+export default function FlyingReactions() {
+    const { activeUsers } = useAwareness();
+    const { reactions } = useYjsProvider();
+    const [localReactions, setLocalReactions] = useState<ReactionData[]>([]);
+
+    // استخراج التفاعلات من awareness للمستخدمين
+    useEffect(() => {
+        const newReactions: ReactionData[] = [];
+
+        Object.values(activeUsers).forEach(user => {
+            if (user.reaction && user.cursor &&
+                Date.now() - user.reaction.timestamp < 3000) {
+                newReactions.push({
+                    emoji: user.reaction.emoji,
+                    point: user.cursor,
+                    timestamp: user.reaction.timestamp,
+                    userId: user.id
+                });
+            }
+        });
+
+        setLocalReactions(newReactions);
+    }, [activeUsers]);
+
+    // استخراج التفاعلات من yjs array
+    useEffect(() => {
+        const handleReactionsUpdate = () => {
+            // يمكن أن نقوم بتحديث التفاعلات الإضافية من مصفوفة Yjs هنا إذا كنا نخزنها
+        };
+
+        reactions.observe(handleReactionsUpdate);
+        return () => {
+            reactions.unobserve(handleReactionsUpdate);
+        };
+    }, [reactions]);
+
+    // إزالة التفاعلات القديمة
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setLocalReactions(prev =>
+                prev.filter(r => Date.now() - r.timestamp < 3000)
+            );
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <>
+            {localReactions.map((reaction) => (
+                <SingleFlyingReaction
+                    key={`${reaction.userId}-${reaction.timestamp}`}
+                    point={reaction.point}
+                    value={reaction.emoji}
+                    timestamp={reaction.timestamp}
+                />
+            ))}
+        </>
+    );
+}
+
+// مكون تفاعل منفرد
+function SingleFlyingReaction({ point, timestamp, value }: {
     point: Point;
     timestamp: number;
     value: string;
-};
-
-export default function FlyingReaction({ point, timestamp, value }: Props) {
-    // استخراج إحداثيات الشاشة مع القيم الافتراضية
-    let x = 0, y = 0;
-
-    if (point.screen) {
-        x = point.screen.x;
-        y = point.screen.y;
-    } else if (point.flow) {
-        // استخدام إحداثيات التدفق كحل بديل إذا كانت متوفرة
-        x = point.flow.x;
-        y = point.flow.y;
-    }
-
-    // إنشاء متغير التحريك بناءً على الطابع الزمني
-    const animationVariant = Math.floor(timestamp % 3);
-
+}) {
     return (
         <div
-            className="flying-reaction pointer-events-none absolute select-none"
+            className="pointer-events-none absolute select-none z-[9000]"
             style={{
-                left: x,
-                top: y,
-                zIndex: 9000,
-                filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.3))",
+                left: point.x,
+                top: point.y,
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
             }}
         >
             <div
                 className="disappear text-2xl"
                 style={{
-                    animation: `goUp${animationVariant} 2s, fadeOut 2s`,
+                    animation: `goUp${timestamp % 3} 2s, fadeOut 2s`,
                 }}
             >
                 <div
                     style={{
-                        animation: `leftRight${animationVariant} 0.5s alternate infinite ease-in-out`,
+                        animation: `leftRight${timestamp % 3} 0.3s alternate infinite ease-in-out`,
                         transform: "translate(-50%, -50%)",
                     }}
                 >

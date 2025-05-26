@@ -4,7 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { DnDProvider } from "./hooks/useDnD";
 import Canvas from "./components/Canvas";
 import { getDiagramDetails } from "@/server/diagrams";
-import { SocketProvider } from "./hooks/useDiagramSocket";
+import { YjsProviderComponent } from "./hooks/useYjsProvider";
 import { ReactionProvider } from "./hooks/useReaction";
 import { UserColorsProvider } from "./hooks/useUserColors";
 
@@ -18,19 +18,15 @@ export default async function Page({
 
     return (
         <ReactFlowProvider>
-            <SocketProvider url={process.env.APP_URL || 'http://localhost:8000'}>
-                <UserColorsProvider>
-                    <DnDProvider>
-                        <ReactionProvider>
-                            <Canvas
-                                initialDiagram={JSON.parse(diagram.json ?? "{}")}
-                                diagramId={diagram_id}
-                                userId={user_id}
-                            />
-                        </ReactionProvider>
-                    </DnDProvider>
-                </UserColorsProvider>
-            </SocketProvider>
+            <UserColorsProvider>
+                <DnDProvider>
+                    <Canvas
+                        initialDiagram={JSON.parse(diagram.json ?? "{}")}
+                        diagramId={diagram_id}
+                        userId={user_id}
+                    />
+                </DnDProvider>
+            </UserColorsProvider>
         </ReactFlowProvider>
     );
 }
