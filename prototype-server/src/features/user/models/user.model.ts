@@ -1,8 +1,7 @@
-import {Neogma } from 'neogma';
-import {ModelFactory} from "../../../utility/enhanced_model_factory";
+import { Neogma} from 'neogma';
+import { ModelFactory } from "../../../utility/enhanced_model_factory";
 
-
-export function UserModel(neogma: Neogma) {
+export function UserModel(neogma: Neogma){
     return ModelFactory(
         {
             name: 'User',
@@ -28,12 +27,14 @@ export function UserModel(neogma: Neogma) {
                     direction: 'out',
                     name: 'OWNS',
                     properties: {},
+                    cardinality: 'many'
                 },
                 CollaboratingDiagrams: {
                     model: 'Diagram',
                     direction: 'out',
                     name: 'COLLABORATOR_AT',
                     properties: {},
+                    cardinality: 'many'
                 },
             },
         },
