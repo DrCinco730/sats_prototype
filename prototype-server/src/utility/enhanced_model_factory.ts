@@ -591,21 +591,3 @@ export function ModelFactory<
 
   return model;
 }
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export {
-  EnhancedNeogmaModel
-}
-
-export {
-  NeogmaInstance,
-  ModelRelatedNodesI,
-  Op,
-  UpdateOp,
-  Literal,
-  NeogmaModel,
-  Neo4jSupportedProperties
-} from 'neogma';
